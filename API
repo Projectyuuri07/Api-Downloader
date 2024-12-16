@@ -1,0 +1,32 @@
+from flask import Flask, request, jsonify
+import os
+import yt_dlp
+
+app = Flask(__name__)
+DOWNLOAD_FOLDER = "Downloads_Videos_YT"
+
+@app.route('/download', methods=['POST'])
+def download_video():
+    data = request.json
+    video_url = data.get('url', '')
+
+    if not video_url:
+        return jsonify(success=False, message="URL inválida.")
+
+    if not os.path.exists(DOWNLOAD_FOLDER):
+        os.makedirs(DOWNLOAD_FOLDER)
+
+    ydl_opts = {
+        'format': 'best',
+        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
+    }
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([video_url])
+        return jsonify(success=True, path=os.path.abspath(DOWNLOAD_FOLDER))
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
